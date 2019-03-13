@@ -1,0 +1,55 @@
+language: android
+env:
+  global:
+  - ANDROID_API=26
+  - ANDROID_BUILD_TOOLS=26.0.2
+  - PROJECT_1=HelloToast
+  - PROJECT_2=CounterHomework
+  - PROJECT_3=ImplicitIntents
+  - secure: Ny6AcK9zcKJW+7Vnfw3KU5Zhm6mnJVCh2mwharXW0Tja6I1LrK8lBxSTHW9LrZJIrREkAxGN+fFyqZwYEoFSejcHNCmdNUwU819xOvgQZ8pV73KcESphueHjLGh4rl0tkUiQJWFW+F3DECNa5tIsHvX10/qqrL//5tpOx7J2Pe2GojUAxhZAw2i4kpYo3fJueatWuIEBjUtvgJRwgmAXWmLhiE+UIQaCCphzaaN/n/I3yUG11AnTeiqpPVPsAg2JUgkLK8NxancrEDHk3Nlf45+0aCJJIWkZlaTO8xoEah2F5SnDTMredZ3j7YSxl7sPHXI0aOOXJzm0hGyWNUcNPtm8fNQ6vpBMyH+hYlfNqT+nx7PZAkokbLN7zNiGIqdCSf6+y4xzvY38YFJiPDXi1eNxCyWXQNwHBToBYMlVJLkW4MO7j6bL9qNe7P6pqYcZOAZ8Yy3EKNCtNT4x+a0YSFbPEWc5elpcyVeMrG4eOec743IM8RkXp0WWj9Is9NHZ+eiA2BGzIme0xgj2u7yAhpLxj1XHpitVVtbpWRo2OezqYVOXlkZ4Un4LsUHKGs4JgXkVx09L8/BrFpjRllZs0iIYFi3x1BiXzHKK1pP5xHS1VTUKhKQ0GTZOmQiMSigfaNVgNTfRnUE3Q35/ZA/bMR5RZiUC8MKNTopV1w/0u20=
+  - secure: W8XcweSnyUluXbYiMUlrD7Ck6Wix3dqfgRQ3126A3pN7eYO/Q4AZOvfkqatzKJqaNeKUwwROxxaOUn+YqRzUoZgfCZedmp96SWB8n8H5e+E761CK0iZ3eQo/LIksO3OvLVk3aifhRrVVa8hNPyMYwegvIGjWCBMzSpNg05QdxHWN09AYpQqA6NLk5giObQ1z9MlmVuVhmTpIsTbNO4n1i/qxvkaRLAKfgmYABXwXUR67gofLzNExuoejmlH340EFN4f9YrEio9GpwjqRAxPBOEez+1vNJ28WyPA6u0VbTk+ZJizFKJ80yqdde54NwEa+mVoFsuyZuXlePqDiVggUeqUZs6cKAqYjXOidRCEusQ8grdi74SMCNqEnnb3v92Mz4YBz2QwCM+z6DHYPG/93n0b/WyelEH7IIMyJ2cAhzN2OmhVK/69KLpQoF4q3ugCzT/C1d0EvH68+C9aq1GOySkY13w4YWbfQ4bXMb6+VKPMHqrTGfGP0y0BUFDEvJTF7pEX6XVVm8KV4GUGXzjgfvcuMXiKa0j5kvUeZ9YvHiU8FBVYkdB/3hOdsOKH+m4ZhC5+YXw0Y8So2eJwdHUcLAKwq/k4kVFe88iiiDf+wM6CCryr8+Lyx6TkMpLAJFR/FJa5h/KEpFydiGrzdpoO+fOtoqaquXNJWdvYpxhhyauY=
+branches:
+  only:
+  - master
+android:
+  components:
+  - build-tools-$ANDROID_BUILD_TOOLS
+  - android-$ANDROID_API
+  - extra-android-m2repository
+before_cache:
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+  - "$HOME/.android/build-cache"
+before_install:
+- export PROJECT_ROOT="${PWD}"
+- chmod +x ${PROJECT_1}/gradlew
+- chmod +x ${PROJECT_2}/gradlew
+- chmod +x ${PROJECT_3}/gradlew
+- chmod +x result_parser.py
+before_script:
+- adb kill-server
+- adb connect ${EMULATOR_SERVER}
+- adb devices
+script:
+- cd ${PROJECT_ROOT}
+- cd ${PROJECT_1} && ./gradlew connectedDebugAndroidTest --stacktrace
+- cd ${PROJECT_ROOT}
+- cd ${PROJECT_2} && ./gradlew connectedDebugAndroidTest --stacktrace
+- cd ${PROJECT_ROOT}
+- cd ${PROJECT_3} && ./gradlew connectedDebugAndroidTest --stacktrace
+after_script:
+- cd ${PROJECT_ROOT}
+- "./result_parser.py ${PROJECT_ROOT}/${PROJECT_1}/app/build/reports/androidTests/connected/com.example.android.hellotoast.IntentTest.html
+  >> results.txt"
+- "./result_parser.py ${PROJECT_ROOT}/${PROJECT_2}/app/build/reports/androidTests/connected/com.example.android.counterhomework.onSaveInstanceStateTest.html
+  >> results.txt"
+- "./result_parser.py ${PROJECT_ROOT}/${PROJECT_3}/app/build/reports/androidTests/connected/com.example.android.implicitintents.TakePictureTest.html
+  >> results.txt"
+- echo $(basename ${TRAVIS_REPO_SLUG}) ${TRAVIS_BRANCH} ${TRAVIS_COMMIT} $(git show
+  -s --format=%ci ${TRAVIS_COMMIT} | cut -c 1-20) $(cat results.txt) > results.txt
+- awk  '//{for(i=6;i<NF;i=i+2) print $i"\t"$(i+1)}' results.txt
+- curl -d "@results.txt" -X POST ${DB_SERVER_URL}
