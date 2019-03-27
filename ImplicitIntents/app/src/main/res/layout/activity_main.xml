@@ -70,7 +70,7 @@
         android:id="@+id/take_picture_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Take A Picture"
-        android:onClick="takePicture"/>
+        android:onClick="takePicture"
+        android:text="Take a Picture" />
 
 </LinearLayout>
